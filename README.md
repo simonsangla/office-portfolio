@@ -2,13 +2,12 @@
 
 **Live showcase:** https://simonsangla.github.io/office-portfolio/
 
-Four reproducible work samples for Office Suite / document-evaluation work:
+Three reproducible work samples (Lead Analyst at TripAdvisor; 16 years in analytics & BI):
 
-- **Excel KPI Command Center** — formula-driven 6-tab workbook with a one-screen executive dashboard.
-- **Executive Insight Deck** — 8-slide data-storytelling deck.
-- **Spreadsheet Evaluation Pack** — rubric-based evaluation of two candidate dashboards, where every score traces to an observable cell so a second rater can reproduce it.
-- **Commodity Shock & Inflation** — a real-data study (FRED + World Bank) of the 2022 energy/food price shock and the inflation that followed, framed as timeline/co-movement with an explicit "not a sole-cause" caveat.
+- **Commodity Shock & Inflation — Workbook** (Excel / Google Sheets): the 2022 energy and food price shock and the inflation that followed, built from real public data (FRED + World Bank), indexed and charted. Timeline framing with an explicit "not a sole-cause" caveat.
+- **Commodity Shock Executive Deck** (PowerPoint / Google Slides): the same dataset retold as eight editable slides with native charts.
+- **Spreadsheet Evaluation Pack**: a rubric-based comparison of two candidate dashboards, where every score traces to an observable cell so a second rater can reproduce it.
 
-Open `index.html` for the full showcase. The individual workbooks and deck (`.xlsx` / `.pptx`) and print-ready versions (`.pdf`) are alongside.
+Open `index.html` for the full showcase. The workbooks/deck (`.xlsx` / `.pptx`) and print-ready `.pdf` versions are alongside.
 
 Contact: simonsangla@gmail.com
