@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simon Sangla &middot; Text-to-SQL Evaluation Sample</title>
+<style>
+:root{
+  --ink:#0f172a;--slate:#334155;--muted:#64748b;--accent:#2563eb;
+  --accent-soft:#eff6ff;--accent-line:#dbeafe;--line:#e5e7eb;--bg:#f1f5f9;--card:#fff;
+  --green:#16a34a;--red:#dc2626;--amber:#b45309;
+  --radius:16px;--shadow:0 1px 3px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.05);--maxw:1000px;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--bg);line-height:1.6;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.hero{background:linear-gradient(160deg,#0f172a 0%,#1e293b 60%,#243049 100%);color:#fff}
+.hero-inner{max-width:var(--maxw);margin:0 auto;padding:64px 28px 36px}
+.eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#93c5fd;margin:0 0 14px}
+.hero h1{font-size:38px;line-height:1.1;margin:0 0 10px;letter-spacing:-.025em;font-weight:800}
+.hero .role{color:#cbd5e1;font-weight:600;font-size:16px;margin:0 0 18px}
+.hero .lead{max-width:760px;color:#e2e8f0;font-size:17px;margin:0}
+main{max-width:var(--maxw);margin:0 auto;padding:32px 28px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:30px;margin:22px 0;box-shadow:var(--shadow)}
+.tag{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em}
+h2{font-size:23px;margin:6px 0 14px;letter-spacing:-.02em;font-weight:800}
+h3{font-size:16px;margin:22px 0 8px;font-weight:700}
+p{color:var(--slate);margin:0 0 12px}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.65;overflow:auto;margin:10px 0;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre .c{color:#7dd3fc}pre .k{color:#c4b5fd}pre .bug{color:#fca5a5;font-weight:700}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f8fafc;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.n{text-align:center;font-weight:700;white-space:nowrap}
+.sev{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.crit{background:#fee2e2;color:var(--red)}.maj{background:#ffedd5;color:var(--amber)}.min{background:#e0e7ff;color:var(--accent)}
+.score{font-size:30px;font-weight:800;color:var(--red)}
+.muted{color:var(--muted);font-size:13px}
+ul{color:var(--slate);margin:6px 0 12px;padding-left:20px}li{margin:4px 0}
+footer{max-width:var(--maxw);margin:20px auto 40px;padding:24px 28px;color:var(--slate);font-size:13px;border-top:1px solid var(--line)}
+footer a{font-weight:600;text-decoration:none}
+@media(max-width:680px){.hero h1{font-size:30px}.card{padding:22px}}
+</style>
+</head>
+<body>
+<div class="hero"><div class="hero-inner">
+  <span class="eyebrow">Text-to-SQL &middot; AI-Output Evaluation Sample</span>
+  <h1>Evaluating an AI's SQL, like a second senior reviewer</h1>
+  <p class="role">Simon Sangla &middot; 16 years in analytics (Lead Analyst, TripAdvisor) &middot; SQL, dbt, Snowflake</p>
+  <p class="lead">A worked example of how I score a model's text-to-SQL output against a rubric: I identify each defect, cite where it breaks, score it, and write the correct query. Every judgement points to something observable, so a second rater can reproduce the score.</p>
+</div></div>
+<main>
+
+  <section class="card">
+    <div class="tag">The task</div>
+    <h2>Natural-language request &rarr; SQL</h2>
+    <p><strong>Prompt given to the model:</strong> "For each marketing channel, return the 7-day rolling average of revenue and the week-over-week change, over the last 90 days, excluding refunded orders."</p>
+    <h3>Schema</h3>
+    <pre><span class="c">-- one row per order</span>
+orders(order_id, channel, order_date <span class="k">date</span>, revenue_cents <span class="k">int</span>, status <span class="k">text</span>)
+       <span class="c">-- status in ('paid', 'refunded')</span></pre>
+  </section>
+
+  <section class="card">
+    <div class="tag">The model's answer</div>
+    <h2>What the AI produced</h2>
+    <pre><span class="k">SELECT</span> channel,
+       <span class="bug">AVG</span>(revenue_cents) <span class="k">OVER</span> (<span class="k">PARTITION BY</span> channel <span class="k">ORDER BY</span> order_date
+                                <span class="bug">ROWS BETWEEN 7 PRECEDING AND CURRENT ROW</span>) <span class="k">AS</span> rolling_avg,
+       revenue_cents - <span class="bug">LAG</span>(revenue_cents, 7) <span class="k">OVER</span> (<span class="k">PARTITION BY</span> channel <span class="k">ORDER BY</span> order_date) <span class="k">AS</span> wow_change
+<span class="k">FROM</span> orders
+<span class="k">WHERE</span> order_date &gt; <span class="bug">NOW() - 90</span>          <span class="c">-- (no refund filter)</span>
+<span class="k">ORDER BY</span> channel, order_date;</pre>
+    <p class="muted">It runs and looks plausible. It does not answer the question.</p>
+  </section>
+
+  <section class="card">
+    <div class="tag">The evaluation</div>
+    <h2>Scorecard <span class="score">2.0 / 5</span></h2>
+    <p class="muted">Weighted across five criteria. Correctness is weighted highest because a wrong number is the costliest defect.</p>
+    <table>
+      <tr><th>Criterion</th><th style="text-align:center">Weight</th><th style="text-align:center">Score</th><th>Reason (observable)</th></tr>
+      <tr><td>Answers the question</td><td class="n">40%</td><td class="n">1</td><td>Averages individual <em>order</em> amounts, not daily revenue per channel &mdash; wrong grain, so "rolling average of revenue" is not what is computed.</td></tr>
+      <tr><td>Window semantics</td><td class="n">25%</td><td class="n">2</td><td><code>ROWS BETWEEN 7 PRECEDING</code> spans 8 rows, and is row-based: on days with gaps or multiple orders it is neither 7 days nor daily.</td></tr>
+      <tr><td>Requirements met</td><td class="n">15%</td><td class="n">1</td><td>The "excluding refunded orders" requirement is dropped &mdash; no <code>status = 'paid'</code> filter, so refunds inflate every figure.</td></tr>
+      <tr><td>Robustness</td><td class="n">10%</td><td class="n">2</td><td><code>LAG(...,7)</code> assumes 7 contiguous daily rows exist; a single missing day silently shifts the week-over-week comparison.</td></tr>
+      <tr><td>Portability / clarity</td><td class="n">10%</td><td class="n">3</td><td><code>NOW() - 90</code> is dialect-fragile (integer vs interval); cents never converted; no CTE, so intent is hard to read.</td></tr>
+    </table>
+    <p class="muted"><strong>Weighted total = 1.65, rounded to 2.0 / 5.</strong> Verdict: rejects the answer. The query is syntactically valid but answers a different question at the wrong grain.</p>
+  </section>
+
+  <section class="card">
+    <div class="tag">The defects, ranked</div>
+    <h2>What a senior reviewer flags</h2>
+    <ul>
+      <li><span class="sev crit">Critical</span> &nbsp;<strong>Wrong grain.</strong> Revenue must be aggregated to one row per channel per day <em>before</em> the rolling average; averaging raw order rows answers a different question.</li>
+      <li><span class="sev maj">Major</span> &nbsp;<strong>Missing requirement.</strong> No <code>status = 'paid'</code>; refunded orders are included against an explicit instruction.</li>
+      <li><span class="sev maj">Major</span> &nbsp;<strong>Window is row-based, not date-based.</strong> Use a <code>RANGE</code> frame over calendar days so gaps and multiple-orders-per-day behave correctly.</li>
+      <li><span class="sev min">Minor</span> &nbsp;<strong>Gap-fragile WoW.</strong> <code>LAG(...,7)</code> should be a join to the same day one week earlier, so a missing day yields NULL rather than a wrong comparison.</li>
+      <li><span class="sev min">Minor</span> &nbsp;<strong>Portability &amp; units.</strong> <code>NOW() - 90</code> &rarr; explicit interval; convert cents to currency; wrap in a CTE for readability.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <div class="tag">The correction</div>
+    <h2>What I would ship instead</h2>
+    <pre><span class="c">-- Postgres / Snowflake. Aggregate to channel-day first, then window over calendar days.</span>
+<span class="k">WITH</span> daily <span class="k">AS</span> (
+    <span class="k">SELECT</span> channel,
+           order_date                         <span class="k">AS</span> d,
+           <span class="k">SUM</span>(revenue_cents) / 100.0          <span class="k">AS</span> revenue   <span class="c">-- cents -&gt; currency</span>
+    <span class="k">FROM</span> orders
+    <span class="k">WHERE</span> status = <span class="c">'paid'</span>                       <span class="c">-- exclude refunds (requirement)</span>
+      <span class="k">AND</span> order_date &gt;= CURRENT_DATE - <span class="k">INTERVAL</span> <span class="c">'90 days'</span>
+    <span class="k">GROUP BY</span> channel, order_date              <span class="c">-- one row per channel-day</span>
+)
+<span class="k">SELECT</span> t.channel,
+       t.d                                     <span class="k">AS</span> day,
+       t.revenue,
+       <span class="k">AVG</span>(t.revenue) <span class="k">OVER</span> (
+           <span class="k">PARTITION BY</span> t.channel <span class="k">ORDER BY</span> t.d
+           <span class="k">RANGE BETWEEN INTERVAL</span> <span class="c">'6 days'</span> <span class="k">PRECEDING AND CURRENT ROW</span>
+       )                                       <span class="k">AS</span> rolling_7d_avg,   <span class="c">-- 7 calendar days, gap-safe</span>
+       t.revenue - w.revenue                   <span class="k">AS</span> wow_change         <span class="c">-- same weekday last week, NULL if absent</span>
+<span class="k">FROM</span> daily t
+<span class="k">LEFT JOIN</span> daily w
+       <span class="k">ON</span> w.channel = t.channel
+      <span class="k">AND</span> w.d = t.d - <span class="k">INTERVAL</span> <span class="c">'7 days'</span>
+<span class="k">ORDER BY</span> t.channel, t.d;</pre>
+    <p class="muted"><strong>Remaining assumption, stated honestly:</strong> the <code>daily</code> CTE has no row for a channel-day with zero paid orders, so the rolling window averages only days that exist. If the business wants zero-revenue days counted, join <code>daily</code> to a generated date spine per channel before the window. I would confirm that intent rather than guess it.</p>
+  </section>
+
+</main>
+<footer>
+  <p><strong>Simon Sangla</strong> &middot; <a href="mailto:simonsangla@gmail.com">simonsangla@gmail.com</a> &middot; <a href="https://simonsangla.github.io/office-portfolio/">Office &amp; document-evaluation portfolio</a></p>
+  Sample data and schema are illustrative; the evaluation method, rubric, and corrected query are the work product.
+</footer>
+</body>
+</html>
